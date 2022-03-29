@@ -1,0 +1,875 @@
+---
+title: "AMNE"
+author: "Kostrova, Dulesov, Podosinova, Krasykova"
+date: "2/19/2020"
+output: 
+    html_document:
+      toc: true
+      toc_float: true
+---
+
+
+# **Introduction**
+
+Our chosen country for the project is Bulgaria. 
+
+We decided to focus on the theme of media and social trust, so we emphasized such aspects as news about politics and current affairs, frequency of internet usage, the degree of trust in people and human assistance and care. The sample consisted of 2198 respondents. Our team hopes that the project will clearly highlight the topic of media communications and social trust for you.
+
+# **Data**
+
+First of all we should upload packadges, which we will use in our analis:
+```{r message=FALSE, warning=FALSE}
+library(haven)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(readr)
+library(knitr) 
+library(kableExtra)
+library(viridis)
+library(wesanderson)
+library(foreign)
+library(RColorBrewer)
+library(car)
+library(DescTools)
+library(corrplot)
+library(psych)
+library(sjstats)
+library(dunn.test)
+library(sjPlot)
+library(margins)
+library(interplot)
+```
+
+Then we need to upload and open our data. We do it by using "Import" in Files directory.
+
+```{r setup, include=FALSE}
+ESS9BG <- read_sav("~/инфсис/ESS9BG.sav") 
+```
+
+Now we should take data which is connected to the Bulgary, to the topic Media and Social Trust, and to the socio-demographic characteristics:
+```{r}
+BG = ESS9BG %>% dplyr::select("idno", "nwspol", "netusoft", "netustm", "ppltrst", "pplfair", "pplhlp", "gndr", "eisced", "marsts", "domicil", "yrbrn", "agea")
+```
+
+Also we decided to rename variables to the more comfortable form:
+```{r}
+BG = BG %>% 
+  rename(id = idno, news_time = nwspol, internet = netusoft, internet_time = netustm, trust = ppltrst, fair = pplfair, help = pplhlp, gender = gndr, education = eisced, marital = marsts, domicile = domicil)
+```
+
+# **Hypothesis:**
++ The higher is the level of assistance the higher is the social trust level
++ Married people will have higher level of the social trust
++ People from the big cities will have lower social trust level
+
+## *Theory for hypothesis:*
++
++ Marriage and trust: some lessons from economics (Robert Rowthorn)
++ The determinants of trust(Alberto Alesina, Eliana La Ferrara)
++ “Effect of technical support and trust on the adoption of electronic human resource management: Evidence from developing countries”
+
+# **Research question**
+Factors which influence the level of social trust among Bulgarians.
+
+# PRIMARY DATA ANALYSIS, STUDY OF VARIABLES AND THEIR RELATIONSHIPS
+
+## **Contribution**
+
+**Anna Kostrova**: made the last graph *(Does the marital status affect how long an individual watches the news about politics in minutes? (by gender))*, came up with a question for it and wrote the conclusion. Uploaded, cleared, filtered the data and renamed some variables. Helped to solve the errors that R gave out. Find out how you can make a graph exactly as you want. I formatted the visual appearance of the report. 
+
+**Egor Dulesov**: finalized the chart ideas and the charts themselves (aesthetically), made the first graph *(Do Bulgarians trust others residents of their country?)*, came up with a question for it and wrote the conclusion. Made a table with description of variables and their types. Checked the code correctness and fixed the errors. 
+
+**Marina Podosinova**: made the third *(Is there a relationship between the level of trust in people and the estimated level of mutual assistance of the Bulgarians?)* and the fourth *(How much time (in minutes) Bulgarians use Internet by gender?)* graphs, came up with questions and conclusions for them. Checked the conclusions to the charts and the work of the whole code.
+
+**Natalia Krasykova**: wrote the introduction, made a table with the main trends for each variable, made the second praph *(How often people use the internet whether for work or personal use? Does it correlate with the education degree?)*, came up with a question and wrote a conclusion for it. Checked the conclusions to the charts and the work of the whole code.
+
+## **Description of variables**
+
+Before we start analyzing our data, we need to understand what each of our variables means and in what format it is presented in our dataset. For this We create a table describing types of our variables:
+```{r}
+VARIABLE = c("id", "news_time", "internet", "internet_time", "trust", "fair", "help", "gender", "education", "marital")
+DESCRIPTION = c("Personal ID of a respondent", "News about politics and current affairs, watching, reading or listening, in minutes", "Internet use, how often", "Internet use, how much time on typical day, in minutes", "Most people can be trusted or you can't be too careful", "Most people try to take advantage of you, or try to be fair", "Most of the time people helpful or mostly looking out for themselves", "Famale, male or no answer", "Highest level of education", "Legal marital status")
+TYPE.OF.VARIABLE = c("Nominal", "Ratio", "Ordinal", "Ratio", "Ordinal", "Ordinal", "Ordinal", "Nominal", "Ordinal", "Nominal")
+
+tb = data.frame(VARIABLE, DESCRIPTION, TYPE.OF.VARIABLE, stringsAsFactors = FALSE)
+kable(tb) %>%  kable_styling(bootstrap_options=c("bordered", "responsive","striped"), full_width = FALSE)
+```
+
+## **Tendency table**
+
+In order to better understand what is happening with our data, we need to make a small analysis of the basic indicators of each variable. We count the median, mean and mode as the key indicators. However, before creating a table with these indicators, it is necessary to get rid of NA:
+```{r}
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}  
+
+BG$news_time =  as.numeric(as.character(BG$news_time))
+news_time = na.omit(BG$news_time)
+News_time = c(mean(news_time), Mode(news_time), median(news_time))
+names(News_time) <- c("mean", "mode", "median")
+
+BG$internet =  as.numeric(as.character(BG$internet))
+using_internet = na.omit(BG$internet)
+Internet <- c(mean(using_internet), Mode(using_internet), median(using_internet))
+names(Internet) <- c("mean", "mode", "median")
+
+BG$internet_time = as.numeric(as.character(BG$internet_time))
+internet_time = na.omit(BG$internet_time)
+Internet_time <- c(mean(internet_time), Mode(internet_time), median(internet_time))
+names(Internet_time) <- c("mean", "mode", "median")
+
+BG$trust = as.numeric(as.character(BG$trust))
+level_trust = na.omit(BG$trust)
+Trust <- c(mean(level_trust), Mode(level_trust), median(level_trust))
+names(Trust) <- c("mean", "mode", "median")
+
+BG$fair = as.numeric(as.character(BG$fair))
+level_fair = na.omit(BG$fair)
+Fair <- c(mean(level_fair), Mode(level_fair), median(level_fair))
+names(Fair) <- c("mean", "mode", "median")
+
+BG$help = as.numeric(as.character(BG$help))
+level_help = na.omit(BG$help)
+Help <- c(mean(level_help), Mode(level_help), median(level_help))
+names(Help) <- c("mean", "mode", "median")
+
+tendency =  data.frame(News_time, Internet, Internet_time, Trust, Fair, Help, stringsAsFactors = FALSE)
+
+kable(tendency) %>% 
+  kable_styling(bootstrap_options=c("bordered", "responsive","striped"), full_width = FALSE)
+```
+*P.s. We don't want to remove all NA from our dataset, because if we do that in the coloumn "internet" will stay only two values.*
+
+## **A few more changes**
+
+We rename values of variables, because in the questionare some answers were encoded as numeric values:
+```{r}
+BG$internet = gsub("1", "Never", BG$internet)
+BG$internet = gsub("2", "Only occasionally", BG$internet)
+BG$internet = gsub("3", "Few times a week", BG$internet)
+BG$internet = gsub("4", "Most days", BG$internet)
+BG$internet = gsub("5", "Every day", BG$internet)
+BG$internet = gsub("7", "Refusal", BG$internet)
+BG$internet = gsub("8", "Don't know", BG$internet)
+BG$internet = gsub("9", "NA", BG$internet)
+
+BG$gender = gsub("1", "Male", BG$gender)
+BG$gender = gsub("2", "Female", BG$gender)
+BG$gender = gsub("9", "NA", BG$gender)
+
+BG$education = gsub("1", "Net", BG$education)
+BG$education = gsub("2", "Nezavarsheno nachalno", BG$education)
+BG$education = gsub("3", "Nachalno", BG$education)
+BG$education = gsub("4", "Osnovno", BG$education)
+BG$education = gsub("5", "Osnovno", BG$education)
+BG$education = gsub("6", "Profesionalna kvalifikatsiya I ", BG$education)
+BG$education = gsub("7", "Sredno obrazovanie", BG$education)
+BG$education = gsub("8", "Sredno obrazovanie", BG$education)
+BG$education = gsub("9", "Sredno obrazovanie", BG$education)
+BG$education = gsub("10", "Profesionalna kvalifikatsiya II", BG$education)
+BG$education = gsub("11", "Profesionalen bakalavar", BG$education)
+BG$education = gsub("12", "Bakalavar", BG$education)
+BG$education = gsub("13", "Magistar", BG$education)
+BG$education = gsub("14", "Doktor", BG$education)
+BG$education = gsub("5555", "Other", BG$education)
+BG$education = gsub("7777", "Refusal", BG$education)
+BG$education = gsub("8888", "Don't know", BG$education)
+BG$education = gsub("9999", "NA", BG$education)
+
+BG$domicile = gsub("1", "A big city", BG$domicile)
+BG$domicile = gsub("2", "Suburbs or outskirts of big city", BG$domicile)
+BG$domicile = gsub("3", "Town or small city", BG$domicile)
+BG$domicile = gsub("4", "Country village", BG$domicile)
+BG$domicile = gsub("5", "Farm or home in countryside", BG$domicile)
+BG$domicile = gsub("7", "Refusal", BG$domicile)
+BG$domicile = gsub("8", "Don't know", BG$domicile)
+BG$domicile = gsub("9", "NA", BG$domicile)
+
+BG$marital = gsub("1", "Legally registered", BG$marital)
+BG$marital = gsub("2", "Legally separated", BG$marital)
+BG$marital = gsub("3", "Legally separated", BG$marital)
+BG$marital = gsub("4", "Legally divorced", BG$marital)
+BG$marital = gsub("5", "Widowed", BG$marital)
+BG$marital = gsub("6", "Never", BG$marital)
+BG$marital = gsub("66", "Not applicable", BG$marital)
+BG$marital = gsub("77", "Refusal", BG$marital)
+BG$marital = gsub("88", "Don't know", BG$marital)
+BG$marital = gsub("99", "NA", BG$marital)
+```
+
+We change types of variable after changing values:
+```{r}
+BG$internet = as.character(BG$internet)
+BG$education = as.character(BG$education)
+BG$marital = as.character(BG$marital)
+BG$gender = as.character(BG$gender)
+```
+
+## **Data analysis**
+
+We had several research questions that we would like to answer by creating charts based on our data.
+
+**Questions**:
+
+1. Do Bulgarians trust others residents of their country?
+
+2. How often Bulgarians use the internet whether for work or personal use? Does it correlate with the education degree?
+
+3. Is there a relationship between the level of trust in people and the estimated level of mutual assistance of the Bulgarians?
+
+4. How much time (in minutes) Bulgarians use Internet by gender?
+
+5. Does the marital status affect how long an individual watches the news about politics in minutes? (by gender)
+
+## **Making graphs**
+
+### Do Bulgarians trust others residents of their country?
+```{r message=FALSE, warning=FALSE}
+center_around <- function(center=0) {
+  function(x, to=NA, from=NA) {
+    r <- max(abs(from-center))
+    (x - (center-r)) / 2/r
+  }
+}
+
+ggplot() +
+  geom_histogram(data = BG, aes(x = trust, fill=..count..), col="white", binwidth = 1)  + 
+  scale_x_continuous(breaks = 0:10) +
+  scale_fill_gradientn(colours = c(viridis::viridis(5),
+                                   rev(viridis::viridis(5))[2:5]), 
+                       rescaler = center_around(0)) +
+  ylim(0,400) +
+  ggtitle("The level of trust in people among residents of Bulgaria") + 
+  xlab("Level of the trust") + 
+  ylab("Number of answers") +
+  geom_vline(aes(xintercept = mean(level_trust), color = 'mean'), linetype="solid", size=0.8) +
+  geom_vline(aes(xintercept = median(level_trust), color = 'median'), linetype="solid", size=0.8)+
+  geom_vline(aes(xintercept = Mode(level_trust), color = 'mode'), linetype="solid",size=0.8) +
+  scale_color_manual(name = "Measurement", values = c(median = "#BFDF0F", mean = "#0BB9AE", mode = "#339666"))+
+  theme_bw() +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+***Conclusion***: The level of confidence of Bulgarians in the residents of their country is shifting to the left, so people tend not to trust the citizens of Bulgaria. Also most often people inform that their level of trust is equal to average, and half of respondents estimate their level of trust to be lower than average.
+
+
+### How often people use the internet whether for work or personal use? Does it correlate with the education degree?
+```{r}
+BG1 = BG
+BG1 = BG1 %>% filter(!is.na(BG1$internet))
+BG1 = BG1 %>% filter(!is.na(BG1$education)) 
+
+ggplot() +
+  geom_bar(data = BG1, aes(x = internet, fill = education))  +
+  scale_fill_viridis_d() +
+  ggtitle("Frequency of Internet use by residents of Bulgaria \nwhether for work or personal use") +
+  labs(x = BG1$education, fill = "Level of education") +
+  xlab("Frquency of using Internet") + 
+  ylab("Number of answers") +
+  theme_bw() +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.text.x = element_text(angle = 25, hjust = 0.5, vjust = 0.8),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+***Conclusion***: This graph shows that people with higher levels of education tend to use the Internet more often.The majority of respondents with no education or partial primary education have never used the Internet. The majority of respondents who regularly use the Internet have secondary (basic) education.
+
+
+### Is there a relationship between the level of trust in people and the estimated level of mutual assistance of the Bulgarians?
+```{r}
+BG2 = BG
+BG2 = BG2 %>% filter(!is.na(BG2$help))
+BG2 = BG2 %>% filter(!is.na(BG2$fair))
+
+ggplot(BG2, aes(x = fair, help, color = gender)) +
+  geom_point(position = "jitter", alpha = 0.6) +
+  geom_smooth(colour = "black",
+              method = "gam") +
+  labs(color = "Gender") + 
+  scale_x_continuous(breaks = 0:10) +
+  scale_y_continuous(breaks = 0:10) +
+  xlab("The level of belief that people are fair") + 
+  ylab("The level of belief that people are willing to help") + 
+  ggtitle("Correlation of trust in people and estimates \nof the suggested level of mutual assistance (help) of Bulgarians") + 
+  scale_color_manual(values=c("#53068C", "#08A5A5")) +
+  theme_bw() +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        rect = element_blank())
+```
+
+***Conclusion***: Both genders are almost equally valued help and fair. Here is a clear linear dependence between trust in people and estimated level of mutual help.
+
+
+### How much time Bulgarians use Internet by gender? (in minutes)
+```{r message=FALSE, warning=FALSE}
+BG3_1 = BG
+BG3_1 = BG3_1 %>% filter(!is.na(BG3_1$internet_time))
+BG3_1 = BG3_1 %>% filter(!is.na(BG3_1$gender))
+
+ggplot(BG, aes(x = gender, y = internet_time)) +
+  geom_boxplot(col = "#53068C", fill = "#08A5A5", alpha = 0.6) + 
+  xlab("") + 
+  ylab("Internet use in minutes per day") + 
+  ggtitle("The amount of time (in minutes) spent in the internet by Bulgarians") + 
+  theme_bw() +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+***Conclusion***: On average, men spend more time on the Internet than women. The graph also shows that the range of distribution of values among women is greater.  Moreover, the “outliers” in the category of women are more significantly different from the main answers than in the category of men.
+
+
+### Does the marital status affect how long an individual watches the news about politics in minutes? (by gender)
+```{r}
+BG4 = BG
+BG4 = BG4 %>% dplyr::select("marital", "news_time", "gender") %>% filter(!is.na(BG4$marital) & !is.na(BG4$news_time)) %>% group_by(marital, gender) %>% mutate(mean_time = round(mean(news_time),1))
+
+ggplot(BG4, aes(x = marital, y = mean_time, fill = gender)) +
+  geom_bar(stat = "identity", position="dodge",  color = "white")  + 
+  scale_fill_manual(values=c("#915AB9", "#4CC5C5")) + 
+  ylim(0,150) + 
+  geom_text(aes(label = mean_time), position=position_dodge(width=0.9), vjust=-0.25,  size = 3) +
+  ggtitle("The relationship between the marital status and \ntime people spend watching news (by gender)") + 
+  labs(x = BG4$gender, fill = "Gender") +
+  theme(axis.text.x = element_blank()) +
+  xlab("Marital status") + 
+  ylab("Mean time watching news") +
+  theme_bw() +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+***Conclusion***: In general men of all types of the marital statuses watch news more than women . Also widowed people and those who have never been married watch the news on the same level regardless of gender. All in all widowed people tend to watch news more frequently than others. 
+
+# CONDUCTING SOME STATISTICAL TESTS
+
+## **Contribution**
+
+**Krasykova Natalia** conducted Chi-square test.
+
+**Dulesov Egor** conducted T-test.
+
+**Podosinova Marina** conducted of ANOVA test.
+
+## **Chi-test: Interes in politics and signing a petition**
+
+We chose these variables: "How interested in politics" and "Signed petition last 12 months". We'll make a table of these variables.
+```{r}
+table(ESS9BG$sgnptit, ESS9BG$polintr)
+```
+
+### **Visualizing data**
+
+Then we are going to build a summarized bar chart of two variables. 
+```{r}
+ggplot(ESS9BG, aes(x = polintr)) +
+  geom_bar()
+
+ggplot(ESS9BG, aes(x = sgnptit)) +
+  geom_bar()
+```
+
+#### **Conclusion:**
++ There are more people not interested in politics than interested.
++ People who haven't written a petition in the last 12 months are more prevalent than those who have written a petition. 
+
+### **Hypotheses for Chi-square test**:
+
++ H0: there is no connection between the degree of interest in politics and the signing of the petition over the past 12 months.
++ H1: there is connection between the degree of interest in politics and the signing of the petition over the past 12 months.
+
+### **Examine data**
+```{r}
+Table <- table(ESS9BG$sgnptit, ESS9BG$polintr)
+kable(Table) %>%
+  kable_styling(bootstrap_options=c("bordered", "condensed", "striped"), full_width = FALSE)
+```
+
+According to the table, in each cell the value above 5, so chi-square is possible. We will test the null hypothesis with a chi-square test.
+```{r}
+chisq.test(ESS9BG$sgnptit, ESS9BG$polintr)
+```
+
+#### **Conclusion:**
++ P-value under 0.05, so we can reject the null hypothesis. Our variables are statistically significantly related.
+
+We check the standardized chi-square residue.
+```{r}
+chisq.test(ESS9BG$sgnptit, ESS9BG$polintr)$stdres
+```
+
+#### **Conclusion:**
++ We see negative values for "did not write the petition" and "very interested"/"quite interested", as well as "wrote the petition" and "hardly interested"/"not at all inerested". This means that the petition was written by those who were interested in politics, or at least quite interested.
+
+### **Visualization 2:**
+```{r}
+plot_xtab(ESS9BG$sgnptit, ESS9BG$polintr, title = NULL, margin = "row", bar.pos = "stack", show.summary = TRUE)
+```
+
+#### **Conclusion:**
++ For those who wrote the petition, most had a hard time being interested in politics.
++ Most of those who didn't write a petition were very interested in politics.
++ We got questionable results compared to standardized chi-square residue.
+
+
+## **T-Test: Level of Education and Time on the Internet**
+
+The T-test is necessary to compare the mean values. In our work, we decided to use an independent-samples t-test, where the binary variable is the level of education of respondents and the continuous variable is the time spent on the Internet. 
+The research question: ***Is there a difference in the time that respondents with different levels of education spend on the Internet?***
+
+
+### **Exploring data**
+
+Here we replace the numerical values of the variables with the corresponding characteristic variables and also leave in the dataframe only two education categories we need. We leave in the dataframe only two variables needed for the test and remove the NA values. 
+```{r}
+BG$education = gsub("Osnovno", "Osnovno obrazovanie", BG$education)
+BG$education = gsub("Profesionalna kvalifikatsiya I ", "Profesionalna kvalifikatsiya", BG$education)
+BG$education = gsub("Profesionalna kvalifikatsiya II", "Profesionalna kvalifikatsiya", BG$education)
+
+BG.test = BG %>% filter(education %in% c("Osnovno obrazovanie", "Profesionalna kvalifikatsiya")) %>% dplyr::select(internet_time, education)
+BG.test$education <- as.factor(BG.test$education)
+BG.test = BG.test %>% filter(!is.na(BG.test$internet_time))
+```
+
+
+##### Also we have to check three assumptions:
+***- Sample size is 30 or more in the smaller group***
+
+```{r}
+Table1 = BG.test %>% group_by(education) %>% summarise(mean = mean(internet_time), median = median(internet_time), count = n())
+
+kable(Table1) %>% 
+  kable_styling(bootstrap_options=c("bordered", "responsive","striped"), full_width = FALSE)
+```
+
+##### **Conclusion**:
+- Here we see some key indicators of our variables, and also confirm compliance with the condition that the number of observations in the samples should be more than 30.
+
+***- Normal distribution of the continuous variable in each group***
+
+*The first way to check normality*
+```{r}
+describeBy(BG.test, BG.test$education)
+```
+
+##### **Conclusion**:
+- Skewness is a measure of the symmetry of a distribution. The normal distribution is symmetrical, and its value "Skew" tends to 0. The value of the "Skew" parameter for a group with a basic level of education is 1.37, while for a group with a professional qualification, this parameter takes the value 1.21. In both cases, the distribution is asymmetric, although deviations to the right are  not very insignificant.
+
+- Kurtosis tells us whether the distribution of peak or plain. For respondents with basic education and professional qualifications, this parameter is 2.48 and 0.68, respectively, which indicates a less sharp distribution of the second group compared to the first.
+
+*Second way to check normality, using histogram*
+```{r}
+ggplot(BG.test, aes(x = internet_time, color = education, fill = education)) +
+      geom_histogram(aes(y=..density.., color = education, fill = education), position = "identity", alpha = 0.7, binwidth = 30) +
+  geom_density(col = "black", fill = "white", alpha = 0.1) +
+  geom_vline(data = Table1, aes(xintercept = mean, color = education), linetype="dashed", size=1) +
+  labs(fill = "Education", colour = "Mean")+
+  scale_color_manual(values = c("#915AB9", "#4CC5C5")) +
+  scale_fill_manual(values=c("#915AB9", "#4CC5C5")) +
+  xlab("Minutes in Internet") + 
+  ylab("Density") +
+  ggtitle("Distribution of time spent on the Internet\n by people with different level of education")+
+theme_classic(base_size = 12) +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+
+```
+
+##### **Conclusion**:
+- The distribution shows that both groups of observations are far from the normal distribution, but the group of respondents with basic education is slightly closer to it.
+  
+***- Equal variances of the continuous variable in each group***
+
+*Comparing mean values using a boxplot*
+```{r}
+ggplot() +
+  geom_boxplot(data = BG.test, aes(x = education, y = internet_time, fill=education), alpha = 0.7) +
+  scale_fill_manual(values=c("#915AB9", "#4CC5C5")) +
+  labs(fill = "Education")+
+  xlab("") + 
+  ylab("Minutes in Internet") +
+  ggtitle("The time spent on the Internet by level of education")+
+theme_classic(base_size = 12) +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+*Checking whether variances equal or not, applying tests (Levene's Test and Bartlett test)*
+
+##### **Hypothesis**: 
+- H0: the variances of the two groups are equal
+- H1: the variances are different
+
+```{r}
+options(scipen = 99) # for small numbers to show zeroes
+leveneTest(BG.test$internet_time ~ BG.test$education)
+bartlett.test(BG.test$internet_time ~ BG.test$education)
+```
+
+##### **Conclusion:**
+- The value of the mean amount of time spent on the Internet by people with professional qualifications is higher than the same value for people with a basic education.
+- Levene Test: p-value = 0.002965 less than 0.05, so we reject H0 and suggest that  the variance are statistically significantly different for the two groups.
+- Bartlett Test: p-value = 0.00001524 less than 0.05, so we reject H0 and suggest that  the variance are statistically significantly different for the two groups.
+- Variances are not equal, so Welch’s correction should be applied.
+
+
+### **Conducting T-test**
+
+##### **Hypothesis**: 
+- H0: the mean time spent on the Internet for people with a basic education and for people with professional qualifications does not differ.
+- H1: the mean time spent on the Internet differs, so there is a relationship between the level of education and the amount of time spent on the Internet.
+
+Running T-test
+```{r}
+t.test(BG.test$internet_time ~ BG.test$education, var.equal = F)
+```
+
+##### **Conclusion:**
+- P-value < 0.05, so we can reject H0, so we can conclude that the mean time spent on the Internet by people with professional qualifications and people with a basic education significantly differs. People from the first group use internet more often.
+
+
+### **Double-checking results with non-parametric test (Wilcoxon)**
+
+##### **Hypothesis**: 
+- H0: the two populations (people with professional qualifications and people with a basic education) have the same distribution with the same median time on the Internet.
+- H1: the two populations (people with professional qualifications and people with a basic education) have the different distribution with the different median time on the Internet.
+
+```{r}
+wilcox.test(internet_time ~ education, data = BG.test)
+```
+
+##### **Conclusion:**
+- *Statistical conclusion*: p-value < 0.05, so there are no strong enough evidence to assert that H0 is true and it should be rejected.
+- *Substantive conclusion*: The Wilcoxon test also proves that the mean time on the Internet of people from the considered groups is significantly different among those who have professional qualifications and those who have basic education.
+
+## **ANOVA: Level of the trust and time spent in internet**
+
+Selecting the needed variables
+```{r}
+BG_1 <- dplyr::select(ESS9BG, c("netustm", "ppltrst")) 
+```
+
+These are the variable types
+```{r}
+BG_1$netustm = as.numeric(BG_1$netustm) #ratio variable
+BG_1$ppltrst = as.character(BG_1$ppltrst) #ordinal variable
+```
+
+Here we assign levels to the "trust" variable to make it categorical
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+
+BG_1$trst[BG_1$ppltrst == "You can't be too careful" | BG_1$ppltrst == "1" | BG_1$ppltrst == "2" | BG_1$ppltrst == "3" | BG_1$ppltrst == "4"] <- "low"
+
+BG_1$trst[BG_1$ppltrst == "5" | BG_1$ppltrst == "6" | BG_1$ppltrst == "7"] <- "medium"
+
+BG_1$trst[BG_1$ppltrst == "8" | BG_1$ppltrst == "9" | BG_1$ppltrst == "Most people can be trusted"] <- "high"
+
+BG_1$trst = as.factor(BG_1$trst)
+```
+
+
+For this test we will use the variables "trst" and "netustm".
+
+### **Hypothesis for ANOVA**: 
++ low-trust-level people spend more time in the Internet than people with high level of trust
+
+Below we constructed a boxplot with the variables
+```{r}
+Plot = BG_1 %>% 
+filter(!is.na(trst)) %>% 
+filter(!is.na(netustm)) %>%
+dplyr::select("trst", "netustm")
+
+ggplot(Plot, aes(x=trst, y=netustm, fill = trst)) +
+geom_boxplot(alpha = 0.5) +
+  scale_fill_manual(values=c("#915AB9", "#4CC5C5", "99FF66")) +
+ggtitle("The Correlation of the Trust Level\n with the Amount of Time Spent in the Internet") +
+xlab("Level of Trust") +
+ylab("Amount of Time People Spend in the Internet") +
+theme_classic(base_size = 12) +
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+Now we check and conclude the equality of variances 
+```{r}
+leveneTest(BG_1$netustm ~ BG_1$trst)
+```
+
+##### **Conclusion:**
+The Levene’s Test shows us that the p-value is equal to 0.9039 while the significance level is equal to 0.05.The fact that calculated p-value is higher than significance level means that we can assume the homogeneity of variances.
+
+### **Conducting F-test**
+```{r}
+oneway.test(BG_1$netustm ~ BG_1$trst, var.equal = T) 
+aov.out <- aov(BG_1$netustm ~ BG_1$trst)
+summary(aov.out)
+```
+
+##### **Interpretation:**
++ The f-value = 1.186, p-value is equal to 0.306 and is significantly higher than 0.05 
++ Therefore, the difference between the amount of time people daily spend in Internet and levels of trust is not statistically significant.
+
+### **Verification normality of residuals**
+```{r}
+layout(matrix(1:4, 2, 2))
+plot(aov.out)
+```
+
+##### **Interpretation:**
++ On the top two charts, not both red lines are perfectly straight 
++ And the line along the diagonal on the Q-Q chart is rather stepped.
++ That is why we assume that the distribution of residuals is not very normal.
+
+### **Tukey's post hoc test**
+We will use Tukey's post hoc test ,since the variances are equal across groups, to inspect which groups contribute to the statistical significance of this test.
+```{r}
+TukeyHSD(aov.out)
+par(mar = c(5, 15, 3, 1))
+Tukey <- TukeyHSD(aov.out)
+plot(Tukey, las = 2)
+```
+
+##### **Interpretation:**
++ The result of a Tukey test shows that the p-values for all types of trust levels are larger than 0.05
++ So we can say that there is no statistically significant difference between them.
+
+### **Double-check of the results with a non-parametric test** 
+```{r}
+kruskal.test(BG_1$netustm ~ BG_1$trst, data = BG_1)
+DunnTest(BG_1$netustm ~ BG_1$trst, data=BG_1)
+```
+
+##### **Interpretation:**
++ Kruskal-Wallis and  post-hoc, Dunn's test give us the same results: the p-value(= 0.7651) is also bigger than 0.05, what proves that there is no significant difference between the levels of trust and time people spend in the Internet.
+
+# REGRESSION ANALISYS
+
+## **Contribution**
+
+**Krasykova Natalia**: Interpreting the correlation matrix,  Interpretation of the model, Interpretation the coefficients, Writing the conclusion.
+
+**Dulesov Egor**: Choice of predictor and outcome variables for a regression model, Creating a regression models, Creating the output table.
+
+**Podosinova Marina**: Selecting variables for analysis, Creating descriptive statistics for the variables, Building the correlation matrix.
+
+The first thing we'll do is choose the variables we need. For each variable we will provide a description.
+
+In our project the variables "nwspol", "ppltrst", "pplhlp", "pplfair", "netustm", "marsts", "domicil" were used because they are relevant to our research interests: the study of social trust among the Bulgarian population.
+We have chosen 4 continuous variables that in our opinion may correlate with the outcome variable of trust: news about politics and current affairs, watching, reading and listening (in minutes), internet usage (in minutes) and level of assistance.
+For regression models, we used 2 categorical predictor variables : 1) marital status - the reason to add marital variable is determined by our assumption that people who have families will have support and trust more than people without families; and 2) location - we consider that people from big cities will be less trusting that people from villages or small cities because of the size of community and the level of competition.
+
+```{r}
+BG3 = BG
+BG3$news_time = as.numeric(BG3$news_time)
+BG3 = filter(BG3, !is.na(BG3$news_time))
+BG3$internet_time = as.numeric(BG3$internet_time)
+BG3 = filter(BG3, !is.na(BG3$internet_time))
+BG3$trust = as.numeric(BG3$trust)
+BG3 = filter(BG3, !is.na(BG3$trust))
+BG3$help = as.numeric(BG3$help)
+BG3 = filter(BG3, !is.na(BG3$help))
+BG3$fair = as.numeric(BG3$fair)
+BG3 = filter(BG3, !is.na(BG3$fair))
+BG3$marital = as.character(BG3$marital)
+BG3 = filter(BG3, !is.na(BG3$marital))
+BG3$domicile = as.character(BG3$domicile)
+BG3 = filter(BG3, !is.na(BG3$domicile))
+```
+
+## **Descriptive statistics and correlations**
+
+1) Let's look at the main parameters of descriptive statistics for continuous variables using the function:
+```{r}
+summary(BG3)
+str(BG3)
+```
+
+2) Let's proceed with categorical variables descriptives:
+```{r}
+ggplot(data = BG3, aes(x = marital, fill = marital)) +
+  geom_bar(width = 0.5) + xlab("Marital status") + ylab("Number of answers") + theme_classic() + 
+  ggtitle("Marital status")+
+  theme(plot.title = element_text(size=14, hjust = 0.5, face="bold"),
+        axis.title.x=element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.5))
+```
+
+```{r}
+ggplot(data = BG3, aes(x = domicile, fill = domicile)) +
+  geom_bar(width = 0.5) + xlab("Domicile") + ylab("Number of answers") + 
+  theme_classic() + 
+  ggtitle("Domicile")+
+  theme(plot.title = element_text(size=12, hjust = 0.5, face="bold"),
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 25, hjust = 0.5, vjust = 0.8),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        rect = element_blank(),
+        panel.grid.major.y = element_line(color = "grey92", size = 0.6))
+```
+
+##### **Conclusion**:
+We have found out the main values and types of the variables and also made sure that there are no missing values.
+
+3) The next step is correlation. We are examining correlation of the level of social trust with variables: news about politics and current affairs, watching, reading and listening (in minutes), internet usage (in minutes) and level of assistance.
+```{r}
+cor(BG3$trust, BG3$internet_time)
+cor(BG3$trust, BG3$news_time)
+cor(BG3$trust, BG3$help)
+cor(BG3$trust, BG3$fair)
+```
+
+##### **Conclusion**:
+We can see that the correlation with the first two variables is very weak. However, the correlation between the variables of social confidence level and level of assistance is much better (0,68) - between strong and moderated correlation. Also correlation between the social confidence level and the level of social fair is 0,77, which is strong correlation. So for in our regression model we will use variables from last correlation (trust and fair). 
+
+4) Visualize the correlations between variables via plot correlation matrix. This is just more conveniet way to view the correlation coefficients.
+```{r warning = FALSE}
+BGcorr = BG3 %>% dplyr::select(trust, internet_time, help, fair, news_time)
+BGcorr <- as.data.frame(BGcorr)
+sjp.corr(BGcorr)
+```
+
+## **Regression models and interpretation**
+
+1) Then we estimate the linear regression models: the level of social trust as a function of the level of social fair (trust as a function of fair).
+```{r}
+model1 = lm(trust ~ fair, data = BG3)
+summary(model1)
+```
+
+##### **Conclusion**:
+We see that our model shows only 59%, i.e. 41% of changes in the level of social trust cannot be explained only by the level of assistance. The F-criterion in this example is 621.2, which is much higher than 1, P-value less than 0.001 that is conclude that the model describes the available data well. The value of p-value describing the inadequacy of the model is very small, which indicates that the model is adequate. As a result of the regression model analysis, we have obtained that the linear model coefficients estimates are significant and the model is adequate.
+
+2) Then we are to add a categorical predictor and create a new linear regression model. We decided to choose a marital status. The reason to add marital variable is determened by our assumption that people who have families will have support and trust more than people without families.
+```{r}
+model2 = lm(trust ~ fair + marital, data = BG3)
+summary(model2)
+```
+
+##### **Conclusion**:
+We see that Multiple R-squared equal to 0.5913. The F-criterion in this example is 155.2, while P-value less than 0.001 is concluded that the model describes the available data well too. But for all the impressive adequacy of the model as a whole (by F-criterion), almost all coefficients are estimated as statistically insignificant.That is why we don't use this model.
+
+3) So here we are choosing another categorical variable (domocile) in order to make our model better and statistically significant. We consider that people from big cities will be less trusting that people from villages or small cities because of size of community and the level of competition.
+```{r}
+model3 = lm(trust ~ fair + domicile, data = BG3)
+summary(model3)
+```
+
+##### **Conclusion**:
+Here we also see that for all the impressive adequacy of the model as a whole (by F-criterion), coefficients are estimated as statistically insignificant.That is why we don't use this model as well.
+
+4) So because of insignificant results in previous models for our overall model we decided to choose two continious variables, which had best correlation with trust.
+```{r}
+model4 = lm(trust ~ fair + help, data = BG3)
+summary(model4)
+```
+
+##### **Conclusion**:
+This model shows that the R-square is 0.62, which means that the model is not accurate enough. This model describes 62% of changes in the level of social trust, which is explained by the level of assistance and the level of fairness of people. However, the F-criterion in this example is 358.5 and judging by the P-value is significant, it means that the model describes the available data well. The p-value for help and fair variables is small, which indicates that the model is adequate. As a result of the regression model analysis, we obtained that the estimates of linear model coefficients are significant and the model can be considered adequate.
+
+5) Here using ANOVA test we examine wich model fits our data best
+```{r}
+anova(model1, model2, model3, model4)
+```
+
+##### **Conclusion**:
+Here we can see that the last model contributes more to predicting the outcome, because the difference is statistically significant (Pr(>F) is < 0.05)
+
+## **Overall conclusion**
+
+Our fourth model is the model of best fit. So, the equation of our model is **y(trust) = -0.03 + 0.6*fair + 0.3*help**. 
+
+```{r echo=FALSE}
+tab_model(model1, model2, model3, model4, 
+          CSS = list(
+    css.depvarhead = 'color: red;',
+    css.centeralign = 'text-align: left;', 
+    css.firsttablecol = 'font-weight: bold;', 
+    css.summary = 'color: blue;',
+    css_theme("cells")), 
+    dv.labels = c("Level of trust(M1)", "Level of trust(M2)", 
+                  "Level of trustv(M3)", "Level of trust(M4)"),
+    show.ci = FALSE) 
+```
+
+The table confirms our claims that the selected categorical predictors (marital, domicle) are insignificant for predicting the confidence level since p-value for most predictors is > 0.05.
+
+The most acceptable model is model4, which explains 62% of changes in the predicted variable.
+
+In addition, the table confirmed the data obtained by us "manually", confirmed the variables that have statistical significance, as well as the values of R^2.
+
+# INTERACTION EFFECT
+
+## **Contribution**
+
+**Krasykova Natalia**: fixing errors in project 3.
+
+**Dulesov Egor**: binding all 3 projects, portfolio design, the final conclusion, work with interraction.
+
+**Podosinova Marina**: fixing errors in project 2.
+
+We have decided to add the new predictor to our model, that predicts the level of trust. This new predictor are multiplied level of help and the level of fair.
+```{r}
+model5 = lm(trust ~ fair + help + help*fair, data = BG3)
+summary(model5)
+tab_model(model4, model5)
+```
+
+##### **Conclusion**:
+The p-value of the new variable is > 0.05, which means that it is insignificant for predicting the result. We have tried many times to find a variable that would be suitable for this analysis, but it was difficult to do this within the framework of our topic. Unfortunately, the added variable is insignificant for predicting the result, but we still decided to describe the new model.
+
+Lets check tha marginal effect
+```{r}
+margins(model5)
+interplot(model5, var1 = "help", var2 = "fair") + 
+  xlab('Help') +
+  ylab('Fair') +
+  geom_hline(yintercept = 0, linetype = "dashed")
+```
+
+##### **Conclusion**:
+The average marginal effect shows that on average, the fair level is higher than the trust level by 0.62, and the help level is higher than the trust level by 0.3. The positive effect of the fair level increases in relation to the help level.
+
+It is necessary to check whether this model gives statistically significant results
+```{r}
+plot_model(model5, type = "int",
+           title = "Predicted values of Trust the levels of help and fair",
+           legend.title = "Fair") +
+  xlab('Help') +
+  ylab('Trust')
+```
+
+##### **Conclusion**:
+Thus, the interaction graph shows the estimated values of the trust level, taking into account the fair and help levels.Confidential results do not overlap, so the data is statistically significant. The chart shows the growth trend of the trust level as the help level increases.
+
+# **Overall Conclusion**
+In conclusion, we can say that after in-depth analysis, some of our hypotheses have been confirmed, while others have been disproved. The best model was the last one, so we cannot deny the links between: trust, fair and assistance.
