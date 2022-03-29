@@ -21,4 +21,4 @@ This project is an analysis of data collected from the "European Social Survey" 
 - Interpretation of statistical indicators
 - Data visualization using the *kableExtra* and *ggplot2* libraries
 
- https://egordulesov.github.io/amne/
+ https://egordulesov.github.io/European-Social-Survey---Analysis-of-Social-Trust/
